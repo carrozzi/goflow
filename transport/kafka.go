@@ -13,7 +13,6 @@ import (
 	sarama "github.com/Shopify/sarama"
 	flowmessage "github.com/cloudflare/goflow/v3/pb"
 	"github.com/cloudflare/goflow/v3/utils"
-	proto "github.com/golang/protobuf/proto"
 )
 
 var (
@@ -161,22 +160,24 @@ func HashProto(fields []string, flowMessage *flowmessage.FlowMessage) string {
 
 func (s KafkaState) SendKafkaFlowMessage(flowMessage *flowmessage.FlowMessage) {
 	var key sarama.Encoder
+	var jsonflow string
 	if s.hashing {
 		keyStr := HashProto(s.keying, flowMessage)
 		key = sarama.StringEncoder(keyStr)
 	}
-	var b []byte
-	if !s.FixedLengthProto {
-		b, _ = proto.Marshal(flowMessage)
-	} else {
-		buf := proto.NewBuffer([]byte{})
-		buf.EncodeMessage(flowMessage)
-		b = buf.Bytes()
-	}
+	jsonflow = utils.FlowMessageToJSON(flowMessage)
+	// var b []byte
+	// if !s.FixedLengthProto {
+	// 	b, _ = proto.Marshal(flowMessage)
+	// } else {
+	// 	buf := proto.NewBuffer([]byte{})
+	// 	buf.EncodeMessage(flowMessage)
+	// 	b = buf.Bytes()
+	// }
 	s.producer.Input() <- &sarama.ProducerMessage{
 		Topic: s.topic,
 		Key:   key,
-		Value: sarama.ByteEncoder(b),
+		Value: sarama.StringEncoder(jsonflow),
 	}
 }
 

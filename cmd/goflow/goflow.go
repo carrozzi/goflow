@@ -70,7 +70,7 @@ func main() {
 	log.SetLevel(lvl)
 
 	var defaultTransport utils.Transport
-	defaultTransport = &utils.DefaultLogTransport{}
+	defaultTransport = &utils.DefaultJSONTransport{}
 
 	switch *LogFmt {
 	case "json":

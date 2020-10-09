@@ -128,7 +128,7 @@ func flowMessageFiltered(fmsg *flowmessage.FlowMessage) []flowMessageItem {
 		case "DstAddr":
 			message = append(message, flowMessageItem{"DstAddr", net.IP(fmsg.DstAddr).String()})
 		case "Etype":
-			message = append(message, flowMessageItem{"Etype", fmt.Sprintf("%v", fmsg.Etype)})
+			message = append(message, flowMessageItem{"Etype", fmt.Sprintf("%04x", fmsg.Etype)})
 		case "Proto":
 			message = append(message, flowMessageItem{"Proto", fmt.Sprintf("%v", fmsg.Proto)})
 		case "SrcPort":
@@ -247,10 +247,24 @@ func FlowMessageToString(fmsg *flowmessage.FlowMessage) string {
 func FlowMessageToJSON(fmsg *flowmessage.FlowMessage) string {
 	filteredMessage := flowMessageFiltered(fmsg)
 	message := make([]string, len(filteredMessage))
+	messagestart := "[{\"sensor\":\"sflow_record\","
+	var device string
+	var smac string
+	var dmac string
 	for i, m := range filteredMessage {
+		if m.Name == "SamplerAddress" {
+			device = m.Value
+		}
+		if m.Name == "SrcMac" {
+			smac = m.Value
+		}
+		if m.Name == "DstMac" {
+			dmac = m.Value
+		}
 		message[i] = fmt.Sprintf("\"%s\":\"%s\"", m.Name, m.Value)
 	}
-	return "{" + strings.Join(message, ",") + "}"
+	devstring := "\"device\":\"" + device + "\", \"keys\":{\"smac\":\"" + smac + "\",\"dmac\":\"" + dmac + "\"},\"fields\":{"
+	return messagestart + devstring + strings.Join(message, ",") + "}}]"
 }
 
 func UDPRoutine(name string, decodeFunc decoder.DecoderFunc, workers int, addr string, port int, sockReuse bool, logger Logger) error {
